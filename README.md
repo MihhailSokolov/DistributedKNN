@@ -1,5 +1,5 @@
 # DistributedKNN
-Master-slave distributed system that works together to speed up the kNN classification. 
+Master-Slave distributed system that works together to speed up the kNN classification. 
 
 ## Description
 k-Nearest-Neighbors classification is very powerful yet very simple machine learning algorightm used for classification. One of the biggest downsides of this algorithm is that it can very slow on big datasets.
