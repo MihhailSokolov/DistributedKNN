@@ -1,9 +1,9 @@
-import unittest
+from unittest import TestCase
 from src.data.data_point import DataPoint
 from src.knn.knn_classifier import *
 
 
-class TestKNNClassifier(unittest.TestCase):
+class TestKNNClassifier(TestCase):
 
     def test_get_majority_vote(self):
         point1 = DataPoint([1.0, 1.0], 'a')
