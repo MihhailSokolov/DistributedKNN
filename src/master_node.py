@@ -1,8 +1,8 @@
 """
 This module contains everything needed for master node.
 """
-import socket
 from src.messages.network_messages import *
+import socket
 
 
 class MasterNode(object):
