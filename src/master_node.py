@@ -5,8 +5,16 @@ from socketserver import TCPServer, BaseRequestHandler
 import network_messages as messages
 
 
-class RequestHandler(BaseRequestHandler):
+class MasterRequestHandler(BaseRequestHandler):
+    """
+    RequestHandler class that handles all requests sent to Master node.
+    """
+
     def handle(self):
+        """
+        Handles from Slaves requests.
+        :return: None
+        """
         print('Request from', self.client_address[0] + ':' + str(self.client_address[1]))
         data = self.request.recv(1024)
         if data and data == messages.GREET_SERVER:
@@ -26,9 +34,8 @@ class MasterNode(object):
         :param host: Host name at which Master node will be located
         :param port: Port number at which Master node will be located
         """
-
         self.data = dataset
-        self.server = TCPServer((host, port), RequestHandler)
+        self.server = TCPServer((host, port), MasterRequestHandler)
 
     def load_data(self, data):
         """
@@ -39,6 +46,10 @@ class MasterNode(object):
         self.data = data
 
     def start_node(self):
+        """
+        Starts Master node to accept requests.
+        :return: None
+        """
         try:
             self.server.serve_forever()
         except KeyboardInterrupt:
