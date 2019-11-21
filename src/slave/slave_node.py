@@ -2,6 +2,7 @@
 This module contains everything needed for Slave node
 """
 import socket
+from src.messages.network_messages import *
 
 
 class SlaveNode(object):
@@ -9,21 +10,24 @@ class SlaveNode(object):
     Slave node class
     """
 
-    def __init__(self, host='localhost', port=1223):
+    def __init__(self, master_host='localhost', master_port=1223):
         """
         Constructor for Master Node class.
-        :param host: Host name at which Slave node will be located
-        :param port: Port number at which Slave node will be located
+        :param master_host: Host name at which Master node to which we want to connect will be located
+        :param master_port: Port number at which Master node to which we want to connect will be located
         """
-        self.host = host
-        self.port = port
+        self.host = master_host
+        self.port = master_port
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     def start_node(self):
         self.socket.connect((self.host, self.port))
-        self.socket.send(b'hello, world!')
+        print('Starting handshake')
+        self.socket.send(GREET_SERVER)
         data = self.socket.recv(1024)
         print('Slave received:', data)
+        if data and data == GREET_CLIENT:
+            print('Handshake completed')
         self.socket.close()
 
 

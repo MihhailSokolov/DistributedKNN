@@ -2,6 +2,7 @@
 This module contains everything needed for master node.
 """
 import socket
+from src.messages.network_messages import *
 
 
 class MasterNode(object):
@@ -9,7 +10,7 @@ class MasterNode(object):
     Master node class
     """
 
-    def __init__(self, dataset=None, master_host='localhost', master_port=1223):
+    def __init__(self, dataset=None, host='localhost', port=1223):
         """
         Constructor for Master Node class.
         :param dataset: The whole dataset of points
@@ -17,8 +18,8 @@ class MasterNode(object):
         :param port: Port number at which Master node will be located
         """
         self.data = dataset
-        self.master_host = master_host
-        self.master_port = master_port
+        self.master_host = host
+        self.master_port = port
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     def load_data(self, data):
@@ -37,9 +38,9 @@ class MasterNode(object):
         try:
             while True:
                 data = connection.recv(1024)
-                if data:
+                if data and data == GREET_SERVER:
                     print('Master received:', data)
-                    connection.sendall(data)
+                    connection.sendall(GREET_CLIENT)
                 else:
                     break
 
