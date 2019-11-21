@@ -1,6 +1,6 @@
 from unittest import TestCase
-from src.data.data_point import DataPoint
-from src.knn.knn_classifier import *
+from data_point import DataPoint
+from knn_classifier import *
 
 
 class TestKNNClassifier(TestCase):

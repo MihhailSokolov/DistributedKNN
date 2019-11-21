@@ -1,8 +1,17 @@
 """
 This module contains everything needed for master node.
 """
-from src.messages.network_messages import *
-import socket
+from socketserver import TCPServer, BaseRequestHandler
+import network_messages as messages
+
+
+class RequestHandler(BaseRequestHandler):
+    def handle(self):
+        print('Request from', self.client_address[0] + ':' + str(self.client_address[1]))
+        data = self.request.recv(1024)
+        if data and data == messages.GREET_SERVER:
+            print('Master received:', data)
+            self.request.sendall(messages.GREET_CLIENT)
 
 
 class MasterNode(object):
@@ -17,10 +26,9 @@ class MasterNode(object):
         :param host: Host name at which Master node will be located
         :param port: Port number at which Master node will be located
         """
+
         self.data = dataset
-        self.master_host = host
-        self.master_port = port
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server = TCPServer((host, port), RequestHandler)
 
     def load_data(self, data):
         """
@@ -31,21 +39,12 @@ class MasterNode(object):
         self.data = data
 
     def start_node(self):
-        self.socket.bind((self.master_host, self.master_port))
-        self.socket.listen(1)
-        connection, (client_host, client_port) = self.socket.accept()
-        print('Client', client_host + ':' + str(client_port), 'connected')
         try:
-            while True:
-                data = connection.recv(1024)
-                if data and data == GREET_SERVER:
-                    print('Master received:', data)
-                    connection.sendall(GREET_CLIENT)
-                else:
-                    break
-
+            self.server.serve_forever()
+        except KeyboardInterrupt:
+            print('Stopping Master node')
         finally:
-            connection.close()
+            self.server.shutdown()
 
 
 if __name__ == '__main__':

@@ -2,7 +2,7 @@
 This module contains everything needed for Slave node
 """
 import socket
-from src.messages.network_messages import *
+import network_messages as messages
 
 
 class SlaveNode(object):
@@ -23,10 +23,10 @@ class SlaveNode(object):
     def start_node(self):
         self.socket.connect((self.host, self.port))
         print('Starting handshake')
-        self.socket.send(GREET_SERVER)
+        self.socket.send(messages.GREET_SERVER)
         data = self.socket.recv(1024)
         print('Slave received:', data)
-        if data and data == GREET_CLIENT:
+        if data and data == messages.GREET_CLIENT:
             print('Handshake completed')
         self.socket.close()
 
