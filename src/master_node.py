@@ -2,6 +2,7 @@
 This module contains everything needed for master node.
 """
 import socket
+import math
 import network_messages as messages
 
 
@@ -78,16 +79,13 @@ class MasterNode(object):
         print('CONNECTION PHASE')
         while len(self.connections) < num_connections:
             connection, address = self.socket.accept()
-            while True:
-                data = connection.recv(1024)
-                if not data:
-                    break
-                if data and data == messages.GREET_SERVER:
-                    self.connections.append((connection, address))
-                    connection.send(messages.GREET_CLIENT)
+            data = connection.recv(1024)
+            if data and data == messages.ClientMessages.GREET_SERVER:
+                self.connections.append((connection, address))
+                connection.send(messages.ServerMessages.GREET_CLIENT)
         print('Established connections:')
         for connection in self.connections:
-            print('\t', connection[1][0] + ':' + connection[1][1])
+            print('\t', connection[1][0] + ':' + str(connection[1][1]))
         print('CONNECTION PHASE IS FINISHED')
 
     def start_data_distribution_phase(self):
@@ -97,7 +95,20 @@ class MasterNode(object):
         """
         print('DATA DISTRIBUTION PHASE')
         n = len(self.connections)
-        # TODO: Implement
+        # TODO: Make sure rounding error does not leave out some data points
+        batch_size = int(len(self.data) / n)
+        for i, connection in enumerate(self.connections):
+            data_batch = self.data[batch_size * i: batch_size * (i + 1)]
+            data = connection[0].recv(1024)
+            if data and data == messages.ClientMessages.SEND_DATA_REQUEST:
+                byte_length = int(math.log2(len(data_batch) / 8)) + 1
+                connection[0].send(len(data_batch).to_bytes(byte_length, byteorder='big'))
+                data = connection[0].recv(1024)
+                if data and data == messages.ClientMessages.READY:
+                    for d in data_batch:
+                        # TODO: Fix math domain error (need better way to determine number of bytes)
+                        byte_length = int(math.log2(int(d / 8))) + 1
+                        connection[0].send(d.to_bytes(byte_length, byteorder='big'))
         print('DATA DISTRIBUTION PHASE IS FINISHED')
 
     def start_classification_phase(self):
@@ -118,12 +129,12 @@ class MasterNode(object):
         """
         print('SHUTDOWN PHASE')
         for connection in self.connections:
-            print('\t', 'Closing connection with', connection[1][0] + ':' + connection[1][1])
+            print('\t', 'Closing connection with', connection[1][0] + ':' + str(connection[1][1]))
             connection[0].close()
         self.socket.close()
         print('SHUTDOWN PHASE IS FINISHED')
 
 
 if __name__ == '__main__':
-    master = MasterNode()
+    master = MasterNode(dataset=[10, 20, 30, 40, 50, 60, 70, 80, 90, 100])
     master.run(1)
