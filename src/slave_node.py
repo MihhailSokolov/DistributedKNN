@@ -1,7 +1,7 @@
 """
 This module contains everything needed for Slave node
 """
-import re
+from data_point import parse_data_point
 import socket
 import network_messages as messages
 
@@ -54,7 +54,7 @@ class SlaveNode(object):
         data = self.socket.recv(1024)
         if data:
             print('RECEIVED:', data)
-            self.batch_size = int.from_bytes(data, 'big')
+            self.batch_size = int(data.decode())
             print('Ready to receive', self.batch_size, 'data points')
             self.socket.send(messages.ClientMessages.READY)
             self.data = []
@@ -62,10 +62,10 @@ class SlaveNode(object):
                 data = self.socket.recv(1024)
                 if not data:
                     continue
-                self.data.append(int.from_bytes(data, 'big'))
+                self.data.append(parse_data_point(data.decode()))
             print('Received points:')
             for d in self.data:
-                print(d)
+                print(d.data)
         print('DATA DISTRIBUTION PHASE IS FINISHED')
 
     def start_classification_phase(self):

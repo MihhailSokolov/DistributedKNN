@@ -4,6 +4,7 @@ This module contains everything needed for master node.
 import socket
 import math
 import network_messages as messages
+from data_point import DataPoint
 
 
 class MasterNode(object):
@@ -41,7 +42,7 @@ class MasterNode(object):
         """
         self.points = points
 
-    def run(self, num_connections, dataset=None, points=None):
+    def run(self, num_connections: int, dataset=None, points=None):
         """
         Starts Master node to run the whole process of establishing connections, distributing data,
         running classification and closing the connections.
@@ -69,7 +70,7 @@ class MasterNode(object):
         self.start_classification_phase()
         self.start_shutdown_phase()
 
-    def start_connection_phase(self, num_connections):
+    def start_connection_phase(self, num_connections: int):
         """
         Starts Connection phase where all connections are established.
         :param num_connections: number of connections to establish (number of slave nodes)
@@ -101,14 +102,11 @@ class MasterNode(object):
             data_batch = self.data[batch_size * i: batch_size * (i + 1)]
             data = connection[0].recv(1024)
             if data and data == messages.ClientMessages.SEND_DATA_REQUEST:
-                byte_length = int(math.log2(len(data_batch) / 8)) + 1
-                connection[0].send(len(data_batch).to_bytes(byte_length, byteorder='big'))
+                connection[0].send(str.encode(str(len(data_batch))))
                 data = connection[0].recv(1024)
                 if data and data == messages.ClientMessages.READY:
                     for d in data_batch:
-                        # TODO: Fix math domain error (need better way to determine number of bytes)
-                        byte_length = int(math.log2(int(d / 8))) + 1
-                        connection[0].send(d.to_bytes(byte_length, byteorder='big'))
+                        connection[0].send(str.encode(str(d)))
         print('DATA DISTRIBUTION PHASE IS FINISHED')
 
     def start_classification_phase(self):
@@ -136,5 +134,14 @@ class MasterNode(object):
 
 
 if __name__ == '__main__':
-    master = MasterNode(dataset=[10, 20, 30, 40, 50, 60, 70, 80, 90, 100])
+    master = MasterNode(dataset=[DataPoint([10, 100], '1'),
+                                 DataPoint([20, 90], '0'),
+                                 DataPoint([30, 80], '1'),
+                                 DataPoint([40, 70], '0'),
+                                 DataPoint([50, 60], '1'),
+                                 DataPoint([60, 50], '0'),
+                                 DataPoint([70, 40], '1'),
+                                 DataPoint([80, 30], '0'),
+                                 DataPoint([90, 20], '1'),
+                                 DataPoint([100, 10], '0')])
     master.run(1)
