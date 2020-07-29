@@ -96,8 +96,8 @@ class MasterNode(object):
         """
         print('DATA DISTRIBUTION PHASE')
         n = len(self.connections)
-        # TODO: Make sure rounding error does not leave out some data points
-        batch_size = int(len(self.data) / n)
+        # TODO: Fix rounding error (when sending  odd number of points to 2 devices, last point is not sent)
+        batch_size = int(len(self.data) // n)
         for i, connection in enumerate(self.connections):
             data_batch = self.data[batch_size * i: batch_size * (i + 1)]
             data = connection[0].recv(1024)
@@ -139,9 +139,9 @@ if __name__ == '__main__':
                                  DataPoint([30, 80], '1'),
                                  DataPoint([40, 70], '0'),
                                  DataPoint([50, 60], '1'),
-                                 DataPoint([60, 50], '0'),
+                                 # DataPoint([60, 50], '0'),
                                  DataPoint([70, 40], '1'),
                                  DataPoint([80, 30], '0'),
                                  DataPoint([90, 20], '1'),
                                  DataPoint([100, 10], '0')])
-    master.run(1)
+    master.run(2)
