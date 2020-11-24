@@ -96,9 +96,12 @@ class MasterNode(object):
         """
         print('DATA DISTRIBUTION PHASE')
         n = len(self.connections)
-        # TODO: Fix rounding error (when sending  odd number of points to 2 devices, last point is not sent)
-        batch_size = int(len(self.data) // n)
+        remaining_points = len(self.data) % n
+        batch_size = int((len(self.data) - remaining_points) / n)
         for i, connection in enumerate(self.connections):
+            need_send_additional_point = remaining_points - i > 0
+            if need_send_additional_point:
+                batch_size += 1
             data_batch = self.data[batch_size * i: batch_size * (i + 1)]
             data = connection[0].recv(1024)
             if data and data == messages.ClientMessages.SEND_DATA_REQUEST:
@@ -107,6 +110,9 @@ class MasterNode(object):
                 if data and data == messages.ClientMessages.READY:
                     for d in data_batch:
                         connection[0].send(str.encode(str(d)))
+            if need_send_additional_point:
+                batch_size -= 1
+                remaining_points -= 1
         print('DATA DISTRIBUTION PHASE IS FINISHED')
 
     def start_classification_phase(self):
@@ -139,7 +145,7 @@ if __name__ == '__main__':
                                  DataPoint([30, 80], '1'),
                                  DataPoint([40, 70], '0'),
                                  DataPoint([50, 60], '1'),
-                                 # DataPoint([60, 50], '0'),
+                                 DataPoint([60, 50], '0'),
                                  DataPoint([70, 40], '1'),
                                  DataPoint([80, 30], '0'),
                                  DataPoint([90, 20], '1'),

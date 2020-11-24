@@ -65,7 +65,7 @@ class SlaveNode(object):
                 self.data.append(parse_data_point(data.decode()))
             print('Received points:')
             for d in self.data:
-                print(d.data)
+                print(d.data, 'label =', d.label)
         print('DATA DISTRIBUTION PHASE IS FINISHED')
 
     def start_classification_phase(self):
