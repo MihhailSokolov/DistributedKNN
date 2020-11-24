@@ -1,9 +1,10 @@
 """
 This module contains everything needed for Slave node
 """
-from data_point import parse_data_point
+from data_point import parse_data_point, DataPoint
 import socket
 import network_messages as messages
+import knn_classifier
 
 
 class SlaveNode(object):
@@ -17,8 +18,8 @@ class SlaveNode(object):
         :param master_host: Host name at which Master node to which we want to connect will be located
         :param master_port: Port number at which Master node to which we want to connect will be located
         """
-        self.batch_size = 0
         self.data = []
+        self.classification_data = []
         self.host = master_host
         self.port = master_port
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -54,11 +55,11 @@ class SlaveNode(object):
         data = self.socket.recv(1024)
         if data:
             print('RECEIVED:', data)
-            self.batch_size = int(data.decode())
-            print('Ready to receive', self.batch_size, 'data points')
+            batch_size = int(data.decode())
+            print('Ready to receive', batch_size, 'data points')
             self.socket.send(messages.ClientMessages.READY)
             self.data = []
-            for i in range(self.batch_size):
+            for i in range(batch_size):
                 data = self.socket.recv(1024)
                 if not data:
                     continue
@@ -74,7 +75,37 @@ class SlaveNode(object):
         :return: Classification results
         """
         print('CLASSIFICATION PHASE')
-        # TODO: Implement
+        self.socket.send(messages.ClientMessages.SEND_DATA_REQUEST)
+        data = self.socket.recv(1024)
+        if data:
+            print('RECEIVED:', data)
+            batch_size = int(data.decode())
+            print('Ready to receive', batch_size, 'data points')
+            self.socket.send(messages.ClientMessages.READY)
+            self.classification_data = []
+            for i in range(batch_size):
+                data = self.socket.recv(1024)
+                if not data:
+                    continue
+                self.classification_data.append(parse_data_point(data.decode()))
+        for p in self.classification_data:
+            print(p.data)
+        self.socket.send(messages.ClientMessages.REQUEST_FOR_K)
+        data = self.socket.recv(1024)
+        if data:
+            k = int(data.decode())
+            print('EXECUTING CLASSIFICATION WITH k =', k)
+            classified_points = []
+            for point in self.classification_data:
+                point_label = knn_classifier.classify(self.data, point, k)
+                classified_points.append(DataPoint(point.data, point_label, point.id))
+            print('CLASSIFICATION FINISHED, SENDING', len(classified_points), 'CLASSIFIED POINTS')
+            self.socket.send(messages.ClientMessages.SEND_CLASSIFICATION_DATA_REQUEST)
+            data = self.socket.recv(1024)
+            if data and data == messages.ServerMessages.ALLOW_PROCEED:
+                self.socket.send(str.encode(str(len(classified_points))))
+                for point in classified_points:
+                    self.socket.send(str.encode(str(point)))
         print('CLASSIFICATION PHASE IS FINISHED')
 
     def start_shutdown_phase(self):

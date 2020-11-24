@@ -2,9 +2,9 @@
 This module contains everything needed for master node.
 """
 import socket
-import math
+
 import network_messages as messages
-from data_point import DataPoint
+from data_point import DataPoint, parse_data_point
 
 
 class MasterNode(object):
@@ -12,7 +12,7 @@ class MasterNode(object):
     Master node class
     """
 
-    def __init__(self, dataset=None, points=None, host='localhost', port=1223):
+    def __init__(self, dataset=None, points=None, k=5, host='localhost', port=1223):
         """
         Constructor for Master Node class.
         :param dataset: The whole dataset of points
@@ -22,6 +22,7 @@ class MasterNode(object):
         """
         self.data = dataset
         self.points = points
+        self.k = k
         self.socket = socket.socket()
         self.socket.bind((host, port))
         self.connections = []
@@ -121,9 +122,43 @@ class MasterNode(object):
         :return: Classification results
         """
         print('CLASSIFICATION PHASE')
-        for point in self.points:
-            pass
-        # TODO: Implement
+        n = len(self.connections)
+        remaining_points = len(self.points) % n
+        batch_size = int((len(self.points) - remaining_points) / n)
+        for i, connection in enumerate(self.connections):
+            need_send_additional_point = remaining_points - i > 0
+            if need_send_additional_point:
+                batch_size += 1
+            data_batch = self.points[batch_size * i: batch_size * (i + 1)]
+            data = connection[0].recv(1024)
+            if data and data == messages.ClientMessages.SEND_DATA_REQUEST:
+                connection[0].send(str.encode(str(len(data_batch))))
+                data = connection[0].recv(1024)
+                if data and data == messages.ClientMessages.READY:
+                    for d in data_batch:
+                        connection[0].send(str.encode(str(d)))
+            if need_send_additional_point:
+                batch_size -= 1
+                remaining_points -= 1
+        for connection in self.connections:
+            data = connection[0].recv(1024)
+            if data and data == messages.ClientMessages.REQUEST_FOR_K:
+                connection[0].send(str.encode(str(self.k)))
+            data = connection[0].recv(1024)
+            if data and data == messages.ClientMessages.SEND_CLASSIFICATION_DATA_REQUEST:
+                connection[0].send(messages.ServerMessages.ALLOW_PROCEED)
+                data = connection[0].recv(1024)
+                if data:
+                    points_to_receive = int(data)
+                    print('Receiving', str(points_to_receive), 'classified point from',
+                          connection[1][0] + ':' + str(connection[1][1]))
+                    classified_points = []
+                    for _ in range(points_to_receive):
+                        data = connection[0].recv(1024)
+                        if data:
+                            classified_points.append(parse_data_point(data.decode()))
+                    for point in classified_points:
+                        print(point, 'from', connection[1][0] + ':' + str(connection[1][1]))
         print('CLASSIFICATION PHASE IS FINISHED')
 
     def start_shutdown_phase(self):
@@ -141,13 +176,15 @@ class MasterNode(object):
 
 if __name__ == '__main__':
     master = MasterNode(dataset=[DataPoint([10, 100], '1'),
-                                 DataPoint([20, 90], '0'),
+                                 DataPoint([20, 90], '1'),
                                  DataPoint([30, 80], '1'),
-                                 DataPoint([40, 70], '0'),
+                                 DataPoint([40, 70], '1'),
                                  DataPoint([50, 60], '1'),
                                  DataPoint([60, 50], '0'),
-                                 DataPoint([70, 40], '1'),
+                                 DataPoint([70, 40], '0'),
                                  DataPoint([80, 30], '0'),
-                                 DataPoint([90, 20], '1'),
-                                 DataPoint([100, 10], '0')])
+                                 DataPoint([90, 20], '0'),
+                                 DataPoint([100, 10], '0')],
+                        points=[DataPoint([20, 50]),
+                                DataPoint([80, 50])])
     master.run(2)
