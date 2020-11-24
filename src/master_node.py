@@ -2,7 +2,7 @@
 This module contains everything needed for master node.
 """
 import socket
-
+import random
 import network_messages as messages
 from data_point import DataPoint, parse_data_point
 
@@ -33,6 +33,7 @@ class MasterNode(object):
         :param data: Dataset to be stored
         :return: None
         """
+        random.shuffle(data)
         self.data = data
 
     def load_points_to_classify(self, points):
@@ -60,6 +61,8 @@ class MasterNode(object):
                 print('No data provided! Shutting down...')
                 self.start_shutdown_phase()
                 return
+        else:
+            random.shuffle(self.data)
         self.start_data_distribution_phase()
         if self.points is None:
             if points is not None:
@@ -153,7 +156,7 @@ class MasterNode(object):
                 if data:
                     points_to_receive = int(data)
                     print('Receiving', str(points_to_receive), 'classified point from',
-                          connection[1][0] + ':' + str(connection[1][1]) + ':')
+                          connection[1][0] + ':' + str(connection[1][1]))
                     classified_points = []
                     for _ in range(points_to_receive):
                         data = connection[0].recv(1024)
