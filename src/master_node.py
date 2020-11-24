@@ -144,6 +144,8 @@ class MasterNode(object):
             data = connection[0].recv(1024)
             if data and data == messages.ClientMessages.REQUEST_FOR_K:
                 connection[0].send(str.encode(str(self.k)))
+        final_classified_points = []
+        for connection in self.connections:
             data = connection[0].recv(1024)
             if data and data == messages.ClientMessages.SEND_CLASSIFICATION_DATA_REQUEST:
                 connection[0].send(messages.ServerMessages.ALLOW_PROCEED)
@@ -151,14 +153,16 @@ class MasterNode(object):
                 if data:
                     points_to_receive = int(data)
                     print('Receiving', str(points_to_receive), 'classified point from',
-                          connection[1][0] + ':' + str(connection[1][1]))
+                          connection[1][0] + ':' + str(connection[1][1]) + ':')
                     classified_points = []
                     for _ in range(points_to_receive):
                         data = connection[0].recv(1024)
                         if data:
                             classified_points.append(parse_data_point(data.decode()))
                     for point in classified_points:
-                        print(point, 'from', connection[1][0] + ':' + str(connection[1][1]))
+                        print(point)
+                        final_classified_points.extend(classified_points)
+        self.points = final_classified_points
         print('CLASSIFICATION PHASE IS FINISHED')
 
     def start_shutdown_phase(self):
@@ -172,6 +176,9 @@ class MasterNode(object):
             connection[0].close()
         self.socket.close()
         print('SHUTDOWN PHASE IS FINISHED')
+        print('Classified points:')
+        for point in self.points:
+            print(point.data, '->', point.label)
 
 
 if __name__ == '__main__':
