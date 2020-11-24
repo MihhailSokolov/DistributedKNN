@@ -23,6 +23,7 @@ class MasterNode(object):
         self.data = dataset
         self.points = points
         self.k = k
+        self.classified_point = {}
         self.socket = socket.socket()
         self.socket.bind((host, port))
         self.connections = []
@@ -125,6 +126,9 @@ class MasterNode(object):
         :return: Classification results
         """
         print('CLASSIFICATION PHASE')
+        # TODO: Each point should be sent to every slave and their labels must be collected,
+        #       then master performs majority vote between these labels to choose the final label.
+        #       Received points should be stored in `self.classified_points` as point -> list of labels
         n = len(self.connections)
         remaining_points = len(self.points) % n
         batch_size = int((len(self.points) - remaining_points) / n)
