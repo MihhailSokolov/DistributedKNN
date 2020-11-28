@@ -2,7 +2,7 @@
 Module that contains DataPoint data
 """
 import numpy as np
-from uuid import uuid4
+from uuid import uuid5, NAMESPACE_OID
 
 
 class DataPoint(object):
@@ -10,15 +10,15 @@ class DataPoint(object):
     DataPoint data that stores all required data for one data point
     """
 
-    def __init__(self, data, label=None, point_id=str(uuid4())):
+    def __init__(self, data, label=None, point_id=None):
         """
         Constructor for DataPoint data.
         :param data: Array of values for each dimension
         :param label: Label assigned to the point
         """
-        self.id = point_id
         self.data = np.array(data)
         self.label = label
+        self.id = point_id if point_id is not None else uuid5(NAMESPACE_OID, str(self.data) + str(self.label))
 
     def __str__(self) -> str:
         return '(' + str(self.id) + ';[' + ','.join([str(point) for point in self.data]) + '];' \

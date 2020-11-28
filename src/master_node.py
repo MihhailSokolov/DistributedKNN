@@ -5,6 +5,7 @@ import socket
 import random
 import network_messages as messages
 from data_point import DataPoint, parse_data_point
+from knn_classifier import get_majority_vote
 
 
 class MasterNode(object):
@@ -23,7 +24,6 @@ class MasterNode(object):
         self.data = dataset
         self.points = points
         self.k = k
-        self.classified_point = {}
         self.socket = socket.socket()
         self.socket.bind((host, port))
         self.connections = []
@@ -126,17 +126,8 @@ class MasterNode(object):
         :return: Classification results
         """
         print('CLASSIFICATION PHASE')
-        # TODO: Each point should be sent to every slave and their labels must be collected,
-        #       then master performs majority vote between these labels to choose the final label.
-        #       Received points should be stored in `self.classified_points` as point -> list of labels
-        n = len(self.connections)
-        remaining_points = len(self.points) % n
-        batch_size = int((len(self.points) - remaining_points) / n)
         for i, connection in enumerate(self.connections):
-            need_send_additional_point = remaining_points - i > 0
-            if need_send_additional_point:
-                batch_size += 1
-            data_batch = self.points[batch_size * i: batch_size * (i + 1)]
+            data_batch = self.points
             data = connection[0].recv(1024)
             if data and data == messages.ClientMessages.SEND_DATA_REQUEST:
                 connection[0].send(str.encode(str(len(data_batch))))
@@ -144,31 +135,39 @@ class MasterNode(object):
                 if data and data == messages.ClientMessages.READY:
                     for d in data_batch:
                         connection[0].send(str.encode(str(d)))
-            if need_send_additional_point:
-                batch_size -= 1
-                remaining_points -= 1
         for connection in self.connections:
             data = connection[0].recv(1024)
             if data and data == messages.ClientMessages.REQUEST_FOR_K:
                 connection[0].send(str.encode(str(self.k)))
-        final_classified_points = []
+                connection[0].send(str.encode(str(len(self.connections))))
+        neighbouring_points = {}
+        for point in self.points:
+            neighbouring_points[str(point.id)] = []
         for connection in self.connections:
             data = connection[0].recv(1024)
             if data and data == messages.ClientMessages.SEND_CLASSIFICATION_DATA_REQUEST:
                 connection[0].send(messages.ServerMessages.ALLOW_PROCEED)
                 data = connection[0].recv(1024)
                 if data:
-                    points_to_receive = int(data)
-                    print('Receiving', str(points_to_receive), 'classified point from',
-                          connection[1][0] + ':' + str(connection[1][1]))
-                    classified_points = []
+                    points_to_receive = int(data.decode())
                     for _ in range(points_to_receive):
                         data = connection[0].recv(1024)
                         if data:
-                            classified_points.append(parse_data_point(data.decode()))
-                    for point in classified_points:
-                        print(point)
-                        final_classified_points.extend(classified_points)
+                            neighbours_to_receive = int(data.decode())
+                            data = connection[0].recv(1024)
+                            if data:
+                                point_id = str(data.decode())
+                                for _ in range(neighbours_to_receive):
+                                    data = connection[0].recv(1024)
+                                    if data:
+                                        neighbour_point = parse_data_point(data.decode())
+                                        neighbouring_points[point_id].append(neighbour_point)
+        final_classified_points = []
+        for point in self.points:
+            neighbours = neighbouring_points[str(point.id)]
+            final_label = get_majority_vote(neighbours)
+            print('Received all neighbours for', point.data, '('+str(point.id)+'):', [p.label for p in neighbours])
+            final_classified_points.append(DataPoint(point.data, final_label, point.id))
         self.points = final_classified_points
         print('CLASSIFICATION PHASE IS FINISHED')
 
