@@ -33,7 +33,7 @@ def get_neighbours(dataset, data_point, k):
 
 def get_majority_vote(points):
     """
-    Finds label that is most common.
+    Finds label that is most common from points.
     :param points: the list of DataPoints
     :return: the label of most common data.
     """
