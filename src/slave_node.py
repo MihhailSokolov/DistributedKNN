@@ -5,6 +5,7 @@ from data_point import parse_data_point
 import socket
 import network_messages as messages
 import knn_classifier
+import argparse
 
 
 class SlaveNode(object):
@@ -121,5 +122,17 @@ class SlaveNode(object):
 
 
 if __name__ == '__main__':
-    slave = SlaveNode()
+    host = 'localhost'
+    port = 1223
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--master-host', '-mh', help='Set Master node host name')
+    parser.add_argument('--master-port', '-mp', help='Set Master node port number')
+    args = parser.parse_args()
+    if args.master_host:
+        host = args.master_host
+    if args.master_port:
+        port = int(args.master_port)
+
+    slave = SlaveNode(master_host=host, master_port=port)
     slave.start_node()

@@ -13,3 +13,18 @@ This application solves that problem by distributing dataset and workload betwee
 - Each Slave returns `k/n` _(rounded up)_ nearest points to the new data point and their classes where `k` is the number of nearest neighbors required for classification and `n` is the number of Slaves
 - Master now has at least `k` nearest points and can do majority voting to choose a class for the new data point. If Master receives more than `k` points, it must iterate through these points leaving only `k` nearest of them to the new data point.
 - Classification is done. Slaves can disconnect.
+
+# Running
+## Master
+Master node can be run by executing class `src/master_node.py`.
+It supports the following CLI arguments:
+- `--host` - set Master node host name
+- `--port` - set Master node port number
+- `-k` - set number for `k` in _kNN_
+- `-n`, `--num-slaves` - set number of expected Slave nodes
+
+## Slave
+Slave node can be run by executing class `src/slave_node.py`.
+It supports the following CLI arguments:
+- `--master-host`, `-mh` - set Master node host name
+- `--master-port`, `-mp` - set Master node port number

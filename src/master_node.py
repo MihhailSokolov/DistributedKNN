@@ -6,6 +6,7 @@ import random
 import network_messages as messages
 from data_point import DataPoint, parse_data_point
 from knn_classifier import get_majority_vote
+import argparse
 
 
 class MasterNode(object):
@@ -21,6 +22,9 @@ class MasterNode(object):
         :param host: Host name at which Master node will be located
         :param port: Port number at which Master node will be located
         """
+        print('k =', k)
+        print('host =', host)
+        print('port =', port)
         self.data = dataset
         self.points = points
         self.k = k
@@ -188,6 +192,26 @@ class MasterNode(object):
 
 
 if __name__ == '__main__':
+    host_arg = 'localhost'
+    port_arg = 1223
+    k_arg = 5
+    n = 2
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--host', help='Set Master node host name')
+    parser.add_argument('--port', help='Set Master node port number')
+    parser.add_argument('-k', help='Set number for k in kNN')
+    parser.add_argument('-n', '--num-slaves', help='Set number of Slave nodes')
+    args = parser.parse_args()
+    if args.host:
+        host_arg = args.host
+    if args.port:
+        port_arg = int(args.port)
+    if args.k:
+        k_arg = int(args.k)
+    if args.num_slaves:
+        n = int(args.num_slaves)
+
     master = MasterNode(dataset=[DataPoint([10, 100], '1'),
                                  DataPoint([20, 90], '1'),
                                  DataPoint([30, 80], '1'),
@@ -199,5 +223,6 @@ if __name__ == '__main__':
                                  DataPoint([90, 20], '0'),
                                  DataPoint([100, 10], '0')],
                         points=[DataPoint([20, 50]),
-                                DataPoint([80, 50])])
-    master.run(2)
+                                DataPoint([80, 50])],
+                        k=k_arg, host=host_arg, port=port_arg)
+    master.run(n)
